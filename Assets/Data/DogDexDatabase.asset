@@ -14,38 +14,38 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DogDexDatabase
   entries:
   - id: 1
-    displayName: "\uB3CC\uAE30"
+    displayName: Dog 1
     level: 1
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: 08a42d339f21b304a8c697485d849daa, type: 3}
   - id: 2
-    displayName: "\uBC31\uB3CC\uAE30"
+    displayName: Dog 2
     level: 2
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: 88cafbd5881435c47a35ad706329dcf4, type: 3}
   - id: 3
-    displayName: "\uB2ED\uB3CC\uAE30"
+    displayName: Dog 3
     level: 3
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: 3550294f2651c7641a1295435f86d091, type: 3}
   - id: 4
-    displayName: "\uBE44\uB3CC\uAE30"
+    displayName: Dog 4
     level: 4
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: cd643516141e1ab4a955944a1b830f99, type: 3}
   - id: 5
-    displayName: "\uB208\uB3CC\uAE30"
+    displayName: Dog 5
     level: 5
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: f02cfa1c9299eb84a813a9c76c634355, type: 3}
   - id: 6
-    displayName: "\uB3C4\uB451\uB3CC\uAE30"
+    displayName: Dog 6
     level: 6
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: 96a2d1bea37fdf14db8116a5d8161bcb, type: 3}
   - id: 7
-    displayName: "\uBC18\uC2E0\uC695\uB3CC\uAE30"
+    displayName: Dog 7
     level: 7
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: 94df85bc9c88319498e5c8b699c02306, type: 3}
   - id: 8
-    displayName: "\uC250\uD504\uB3CC\uAE30"
+    displayName: Dog 8
     level: 8
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: ab9d1345570e247499013269eef7b3f3, type: 3}
   - id: 9
-    displayName: "\uB3CC\uAE30\uB300\uC655"
+    displayName: Dog 9
     level: 9
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: ef12f29e47ff3b84499f036a2fb4b696, type: 3}

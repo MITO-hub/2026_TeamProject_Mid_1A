@@ -36,7 +36,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 170, y: 190}
+  m_SizeDelta: {x: 145, y: 158}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &6900497410547938827
 MonoBehaviour:
@@ -50,6 +50,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fef78d917f31425a89d4ef08bf10f6cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DogDexSlotView
+  entry:
+    id: 0
+    displayName: 
+    level: 0
+    icon: {fileID: 0}
+  frameImage: {fileID: 5074197104887119761}
   iconImage: {fileID: 8889286577367601664}
   nameText: {fileID: 9065821261514759156}
   lockedMark: {fileID: 5732716343691266552}
@@ -168,7 +174,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 118, y: 118}
+  m_SizeDelta: {x: 96, y: 96}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8091937320970859207
 CanvasRenderer:
@@ -245,8 +251,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 24}
-  m_SizeDelta: {x: 152, y: 138}
+  m_AnchoredPosition: {x: 0, y: 20}
+  m_SizeDelta: {x: 126, y: 116}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &749027149310133644
 CanvasRenderer:
@@ -335,8 +341,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -72}
-  m_SizeDelta: {x: 178, y: 34}
+  m_AnchoredPosition: {x: 0, y: -61}
+  m_SizeDelta: {x: 120, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6627719405949885343
 CanvasRenderer:
@@ -368,7 +374,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 22
+    m_FontSize: 24
     m_FontStyle: 1
     m_BestFit: 0
     m_MinSize: 10
@@ -379,4 +385,4 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 1. ???
+  m_Text: 1
