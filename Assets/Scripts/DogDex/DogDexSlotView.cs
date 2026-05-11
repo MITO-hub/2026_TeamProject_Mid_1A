@@ -5,7 +5,6 @@ public class DogDexSlotView : MonoBehaviour
 {
     [SerializeField] private Image iconImage;
     [SerializeField] private Text nameText;
-    [SerializeField] private Text levelText;
     [SerializeField] private GameObject lockedMark;
     [SerializeField] private Sprite lockedIcon;
 
@@ -28,12 +27,8 @@ public class DogDexSlotView : MonoBehaviour
 
         if (nameText != null)
         {
-            nameText.text = isUnlocked ? entry.DisplayName : "???";
-        }
-
-        if (levelText != null)
-        {
-            levelText.text = isUnlocked ? $"Lv. {entry.Level}" : "Locked";
+            string label = isUnlocked ? entry.DisplayName : "???";
+            nameText.text = $"{entry.Id}. {label}";
         }
 
         if (lockedMark != null)

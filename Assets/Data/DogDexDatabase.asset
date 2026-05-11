@@ -14,26 +14,38 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DogDexDatabase
   entries:
   - id: 1
-    displayName: "\uAC15\uC544\uC9C0 1\uB2E8\uACC4"
+    displayName: "\uB3CC\uAE30"
     level: 1
     icon: {fileID: 0}
   - id: 2
-    displayName: "\uAC15\uC544\uC9C0 2\uB2E8\uACC4"
+    displayName: "\uBC31\uB3CC\uAE30"
     level: 2
     icon: {fileID: 0}
   - id: 3
-    displayName: "\uAC15\uC544\uC9C0 3\uB2E8\uACC4"
+    displayName: "\uB2ED\uB3CC\uAE30"
     level: 3
     icon: {fileID: 0}
   - id: 4
-    displayName: "\uAC15\uC544\uC9C0 4\uB2E8\uACC4"
+    displayName: "\uBE44\uB3CC\uAE30"
     level: 4
     icon: {fileID: 0}
   - id: 5
-    displayName: "\uAC15\uC544\uC9C0 5\uB2E8\uACC4"
+    displayName: "\uB208\uB3CC\uAE30"
     level: 5
     icon: {fileID: 0}
   - id: 6
-    displayName: "\uAC15\uC544\uC9C0 6\uB2E8\uACC4"
+    displayName: "\uB3C4\uB451\uB3CC\uAE30"
     level: 6
+    icon: {fileID: 0}
+  - id: 7
+    displayName: "\uBC18\uC2E0\uC695\uB3CC\uAE30"
+    level: 7
+    icon: {fileID: 0}
+  - id: 8
+    displayName: "\uC250\uD504\uB3CC\uAE30"
+    level: 8
+    icon: {fileID: 0}
+  - id: 9
+    displayName: "\uB3CC\uAE30\uB300\uC655"
+    level: 9
     icon: {fileID: 0}
