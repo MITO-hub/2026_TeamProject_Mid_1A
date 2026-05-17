@@ -1,0 +1,13 @@
+fileFormatVersion: 2
+guid: 73683b010be7e094dbb9436cc32aec3c
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - database: {fileID: 11400000, guid: 9fa178a22a2d2dd4e9f27e22d5c25227, type: 2}
+  - dogPrefab: {fileID: 811063136334300064, guid: 61fe668c27c3d6e499b3556432f98e57, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
