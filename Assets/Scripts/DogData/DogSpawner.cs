@@ -4,6 +4,7 @@ public class DogSpawner : MonoBehaviour
 {
     public DogDatabase database;
     public GameObject dogPrefab;
+    public bool registerSpawnedDogsToDex = true;
 
     public void SpawnDog(int id)
     {
@@ -11,12 +12,21 @@ public class DogSpawner : MonoBehaviour
 
         if (data == null)
         {
-            Debug.LogError("해당 ID의 강아지를 찾을 수 없습니다: " + id);
+            Debug.LogError("Dog data not found: " + id);
             return;
         }
 
         GameObject obj = Instantiate(dogPrefab);
         Dog dog = obj.GetComponent<Dog>();
         dog.SetData(data);
+
+        if (registerSpawnedDogsToDex)
+        {
+            bool isFirstAcquisition = DogDexManager.RecordDogAcquired(data.ID);
+            if (isFirstAcquisition)
+            {
+                Debug.Log("Dog registered in dex: " + data.ID);
+            }
+        }
     }
 }
