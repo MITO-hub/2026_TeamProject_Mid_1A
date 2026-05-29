@@ -101,7 +101,7 @@ public class InGameUIController : MonoBehaviour
 
     public void GenerateBonePlaceholder()
     {
-        Debug.Log("Bone generator clicked. Bone generation is not wired yet.");
+        Debug.Log("Bone generator clicked.");
     }
 
     public void CloseTopPanel()

@@ -1,4 +1,4 @@
-﻿using UnityEditor;
+using UnityEditor;
 using UnityEditor.Events;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -8,80 +8,261 @@ using UnityEngine.UI;
 
 public static class InGameUIPrototypeSceneBuilder
 {
-    private const string ScenePath = "Assets/Scenes/InGameUIPrototype.unity";
+    private const string InGameScenePath = "Assets/Scenes/InGameUIPrototype.unity";
+    private const string TitleScenePath = "Assets/Scenes/TitleScene.unity";
     private const string DexDatabasePath = "Assets/Data/DogDexDatabase.asset";
     private const string SlotPrefabPath = "Assets/Prefabs/DogDexSlot.prefab";
-    private const string UiImageFolder = "Assets/Art/UI_References/20260522_DriveDownload";
-    private const string GeneratedArtFolder = "Assets/Art/Generated";
-    private const string RoomBackgroundPath = GeneratedArtFolder + "/ingame_room_background.png";
+    private const string NewUiFolder = "Assets/Art/Prototype/UI_20260529";
 
     [MenuItem("Tools/In Game UI/Build Prototype Scene")]
     public static void Build()
     {
-        EnsureUiReferenceSprites();
-        EnsureGeneratedArtFolder();
-        Sprite roomBackground = CreateRoomBackgroundSprite();
-
-        Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-        scene.name = "InGameUIPrototype";
-
-        CreateCamera();
-        Canvas canvas = CreateCanvas();
-        CreateEventSystem();
-
-        DogDexDatabase database = AssetDatabase.LoadAssetAtPath<DogDexDatabase>(DexDatabasePath);
-        DogDexSlotView slotPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(SlotPrefabPath)?.GetComponent<DogDexSlotView>();
-        DogDexManager manager = CreateDexManager(database);
-
-        InGameUIController controller = new GameObject("InGameUIController").AddComponent<InGameUIController>();
-        CreateMainScreen(canvas.transform, controller, roomBackground);
-        DogDexView dexView = CreateDogDexPanel(canvas.transform, controller, manager, slotPrefab, database);
-        GameObject settingsPanel = CreateSettingsPanel(canvas.transform, controller);
-
-        SerializedObject serializedController = new SerializedObject(controller);
-        serializedController.FindProperty("settingsPanel").objectReferenceValue = settingsPanel;
-        serializedController.FindProperty("dogDexPanel").objectReferenceValue = dexView.transform.parent.gameObject;
-        serializedController.FindProperty("dogDexView").objectReferenceValue = dexView;
-        serializedController.FindProperty("dogDexManager").objectReferenceValue = manager;
-        serializedController.ApplyModifiedPropertiesWithoutUndo();
-
-        settingsPanel.SetActive(false);
-        dexView.transform.parent.gameObject.SetActive(false);
-
-        EditorSceneManager.SaveScene(scene, ScenePath);
+        AssetDatabase.Refresh();
+        EnsureNewUiSprites();
+        BuildTitleScene();
+        BuildInGameScene();
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
     }
 
-    private static void EnsureUiReferenceSprites()
+    private static void BuildTitleScene()
     {
-        string[] guids =
-        {
-            "d03fe3da216e5ab4085447d4394acae6",
-            "97789076acd861241b3ef75946a23570",
-            "e85580a65501dca46b8365853bc5acac",
-            "bb08aa6cc2ae28d45bfce4b30262b928",
-            "c617a0f3628fba6439671d23fecbbc01",
-            "7f3744dd4dfc8a4408ad9b1b2df4fde3",
-            "4707fdb48b82a7746916cf21150c504d",
-            "396f23740dde84146a1cb999a4351513"
-        };
+        Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        scene.name = "TitleScene";
 
-        for (int i = 0; i < guids.Length; i++)
-        {
-            string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-            TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
-            if (importer == null)
-            {
-                Debug.LogWarning("UI reference image missing: " + guids[i]);
-                continue;
-            }
+        CreateCamera();
+        Canvas canvas = CreateCanvas("TitleCanvas");
+        CreateEventSystem();
 
-            importer.textureType = TextureImporterType.Sprite;
-            importer.spriteImportMode = SpriteImportMode.Single;
-            importer.alphaIsTransparency = true;
-            importer.mipmapEnabled = false;
-            importer.SaveAndReimport();
+        InGameUIController controller = new GameObject("TitleUIController").AddComponent<InGameUIController>();
+        CreateFullScreenImage("TitleBackground", canvas.transform, LoadNewUiSprite("UI-01"));
+        AddTransparentButton(canvas.transform, "StartButton", new Vector2(250f, 78f), controller.StartGame, new Vector2(-72f, -76f));
+        AddTransparentButton(canvas.transform, "ContinueButton", new Vector2(190f, 58f), controller.ContinueGame, new Vector2(-72f, -164f));
+        AddTransparentButton(canvas.transform, "HelpButton", new Vector2(54f, 54f), controller.ContinueGame, new Vector2(-85f, -248f));
+        AddTransparentButton(canvas.transform, "SettingsButton", new Vector2(54f, 54f), controller.ToggleSettings, new Vector2(-178f, -248f));
+        AddTransparentButton(canvas.transform, "ExitButton", new Vector2(92f, 48f), controller.ExitGame, new Vector2(110f, -248f));
+
+        GameObject settingsPanel = CreateSettingsPanel(canvas.transform, controller);
+        SerializedObject serializedController = new SerializedObject(controller);
+        serializedController.FindProperty("settingsPanel").objectReferenceValue = settingsPanel;
+        serializedController.ApplyModifiedPropertiesWithoutUndo();
+        settingsPanel.SetActive(false);
+
+        EditorSceneManager.SaveScene(scene, TitleScenePath);
+    }
+
+    private static void BuildInGameScene()
+    {
+        Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        scene.name = "InGameUIPrototype";
+
+        CreateCamera();
+        Canvas canvas = CreateCanvas("InGameUICanvas");
+        CreateEventSystem();
+
+        DogDexDatabase database = AssetDatabase.LoadAssetAtPath<DogDexDatabase>(DexDatabasePath);
+        DogDexManager manager = CreateDexManager(database);
+
+        InGameUIController controller = new GameObject("InGameUIController").AddComponent<InGameUIController>();
+        CreateMainScreen(canvas.transform, controller);
+        GameObject dogDexPanel = CreateDogDexPanel(canvas.transform, controller);
+        GameObject settingsPanel = CreateSettingsPanel(canvas.transform, controller);
+
+        SerializedObject serializedController = new SerializedObject(controller);
+        serializedController.FindProperty("settingsPanel").objectReferenceValue = settingsPanel;
+        serializedController.FindProperty("dogDexPanel").objectReferenceValue = dogDexPanel;
+        serializedController.FindProperty("dogDexView").objectReferenceValue = null;
+        serializedController.FindProperty("dogDexManager").objectReferenceValue = manager;
+        serializedController.ApplyModifiedPropertiesWithoutUndo();
+
+        settingsPanel.SetActive(false);
+        dogDexPanel.SetActive(false);
+
+        EditorSceneManager.SaveScene(scene, InGameScenePath);
+    }
+
+    private static void CreateMainScreen(Transform parent, InGameUIController controller)
+    {
+        GameObject root = CreateRectObject("InGameUIScreen", Vector2.zero, parent);
+        Stretch(root.GetComponent<RectTransform>());
+
+        CreateFullScreenImage("NewInGameLayout", root.transform, LoadNewUiSprite("UI-02"));
+
+        BoneScatterController boneScatter = root.AddComponent<BoneScatterController>();
+        CreateSpriteImage("BoneGenerateCounterBone", root.transform, LoadNewUiSprite("Recource/자산 16"), new Vector2(116f, 70f), new Vector2(-548f, -281f));
+
+        Text boneCountText = CreateText("BoneCountText", root.transform, "0/5", 25, TextAnchor.MiddleCenter);
+        RectTransform boneCountRect = boneCountText.GetComponent<RectTransform>();
+        boneCountRect.anchoredPosition = new Vector2(-548f, -281f);
+        boneCountRect.sizeDelta = new Vector2(54f, 30f);
+        boneCountText.color = new Color(0.25f, 0.22f, 0.15f);
+        boneCountText.fontStyle = FontStyle.Bold;
+        boneCountText.resizeTextForBestFit = true;
+        boneCountText.resizeTextMinSize = 21;
+        boneCountText.resizeTextMaxSize = 28;
+
+        Button boneButton = AddTransparentButton(root.transform, "BoneGenerateButton", new Vector2(92f, 72f), boneScatter.SpawnBones, new Vector2(-542f, -284f));
+
+        SerializedObject serializedScatter = new SerializedObject(boneScatter);
+        serializedScatter.FindProperty("spawnRoot").objectReferenceValue = root.GetComponent<RectTransform>();
+        serializedScatter.FindProperty("boneSprite").objectReferenceValue = LoadNewUiSprite("Recource/자산 16");
+        serializedScatter.FindProperty("boneCountText").objectReferenceValue = boneCountText;
+        serializedScatter.FindProperty("generateButton").objectReferenceValue = boneButton;
+        serializedScatter.ApplyModifiedPropertiesWithoutUndo();
+
+        AddTransparentButton(root.transform, "DogDexButton", new Vector2(74f, 82f), controller.ToggleDogDex, new Vector2(-454f, -284f));
+        AddTransparentButton(root.transform, "SettingsButton", new Vector2(62f, 62f), controller.ToggleSettings, new Vector2(-586f, 286f));
+    }
+
+    private static GameObject CreateDogDexPanel(Transform parent, InGameUIController controller)
+    {
+        GameObject panel = CreateRectObject("DogDexPanel", Vector2.zero, parent);
+        Stretch(panel.GetComponent<RectTransform>());
+        CreateFullScreenImage("NewDogDexLayout", panel.transform, LoadNewUiSprite("UI-03"));
+
+        AddTransparentButton(panel.transform, "BackButton", new Vector2(120f, 72f), controller.HideDogDex, new Vector2(-410f, -272f));
+        AddTransparentButton(panel.transform, "CloseButton", new Vector2(58f, 58f), controller.HideDogDex, new Vector2(522f, 260f));
+
+        ScrollRect scrollRect = CreateDogDexScrollView(panel.transform);
+        Transform content = scrollRect.content;
+        CreateLockedDexPlaceholders(content, 40);
+        return panel;
+    }
+
+    private static GameObject CreateSettingsPanel(Transform parent, InGameUIController controller)
+    {
+        GameObject panel = CreateRectObject("SettingsPanel", Vector2.zero, parent);
+        Stretch(panel.GetComponent<RectTransform>());
+
+        Image blocker = panel.AddComponent<Image>();
+        blocker.color = new Color(1f, 1f, 1f, 0.72f);
+        blocker.raycastTarget = true;
+
+        GameObject window = CreateRectObject("SettingsWindow", new Vector2(1000f, 655f), panel.transform);
+        RectTransform windowRect = window.GetComponent<RectTransform>();
+        windowRect.anchorMin = new Vector2(0.5f, 0.5f);
+        windowRect.anchorMax = new Vector2(0.5f, 0.5f);
+        windowRect.anchoredPosition = new Vector2(24f, -2f);
+        Image windowImage = window.AddComponent<Image>();
+        windowImage.sprite = LoadNewUiSprite("Recource/자산 7");
+        windowImage.color = Color.white;
+        windowImage.preserveAspect = true;
+        windowImage.raycastTarget = true;
+
+        AddTransparentButton(window.transform, "CloseButton", new Vector2(70f, 70f), controller.HideSettings, new Vector2(454f, 152f));
+
+        CreateSpriteImage("SpeakerIcon", window.transform, LoadNewUiSprite("Recource/자산 14"), new Vector2(78f, 78f), new Vector2(-320f, 80f));
+        CreateSettingsLabel(window.transform, "BgmLabel", "배경화면", new Vector2(-306f, 18f));
+
+        CreateSpriteImage("MusicIcon", window.transform, LoadNewUiSprite("Recource/자산 13"), new Vector2(78f, 78f), new Vector2(-320f, -90f));
+        CreateSettingsLabel(window.transform, "SfxLabel", "효과음", new Vector2(-306f, -152f));
+
+        AddSpriteButton(window.transform, "HelpButton", LoadNewUiSprite("Recource/자산 11"), new Vector2(86f, 86f), controller.ContinueGame, new Vector2(190f, -48f));
+        CreateSettingsLabel(window.transform, "HelpLabel", "도움말", new Vector2(190f, -112f));
+
+        AddSpriteButton(window.transform, "ExitButton", LoadNewUiSprite("Recource/자산 8"), new Vector2(86f, 86f), controller.ExitGame, new Vector2(340f, -48f));
+        CreateSettingsLabel(window.transform, "ExitLabel", "나가기", new Vector2(340f, -112f));
+
+        SettingsVolumeController volumeController = panel.AddComponent<SettingsVolumeController>();
+        Slider bgmSlider = CreateVolumeSlider(window.transform, "BgmSlider", new Vector2(-102f, 78f));
+        Slider sfxSlider = CreateVolumeSlider(window.transform, "SfxSlider", new Vector2(-102f, -92f));
+
+        SerializedObject serializedVolume = new SerializedObject(volumeController);
+        serializedVolume.FindProperty("bgmSlider").objectReferenceValue = bgmSlider;
+        serializedVolume.FindProperty("sfxSlider").objectReferenceValue = sfxSlider;
+        serializedVolume.FindProperty("bgmValueText").objectReferenceValue = null;
+        serializedVolume.FindProperty("sfxValueText").objectReferenceValue = null;
+        serializedVolume.ApplyModifiedPropertiesWithoutUndo();
+        return panel;
+    }
+
+    private static ScrollRect CreateDogDexScrollView(Transform parent)
+    {
+        GameObject scrollObject = CreateRectObject("DogDexScrollView", new Vector2(460f, 468f), parent);
+        RectTransform scrollRectTransform = scrollObject.GetComponent<RectTransform>();
+        scrollRectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+        scrollRectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+        scrollRectTransform.anchoredPosition = new Vector2(298f, 4f);
+
+        Image scrollBackground = scrollObject.AddComponent<Image>();
+        scrollBackground.color = new Color(0.80f, 0.81f, 0.62f, 1f);
+        scrollBackground.raycastTarget = true;
+
+        ScrollRect scrollRect = scrollObject.AddComponent<ScrollRect>();
+        scrollRect.horizontal = false;
+        scrollRect.vertical = true;
+        scrollRect.scrollSensitivity = 28f;
+        scrollRect.movementType = ScrollRect.MovementType.Elastic;
+
+        GameObject viewport = CreateRectObject("Viewport", Vector2.zero, scrollObject.transform);
+        RectTransform viewportRect = viewport.GetComponent<RectTransform>();
+        Stretch(viewportRect);
+        Image viewportImage = viewport.AddComponent<Image>();
+        viewportImage.color = new Color(1f, 1f, 1f, 0.01f);
+        viewport.AddComponent<Mask>().showMaskGraphic = false;
+
+        GameObject content = CreateRectObject("Content", new Vector2(460f, 0f), viewport.transform);
+        RectTransform contentRect = content.GetComponent<RectTransform>();
+        contentRect.anchorMin = new Vector2(0.5f, 1f);
+        contentRect.anchorMax = new Vector2(0.5f, 1f);
+        contentRect.pivot = new Vector2(0.5f, 1f);
+        contentRect.anchoredPosition = Vector2.zero;
+
+        GridLayoutGroup layout = content.AddComponent<GridLayoutGroup>();
+        layout.cellSize = new Vector2(92f, 138f);
+        layout.spacing = new Vector2(18f, 10f);
+        layout.padding = new RectOffset(16, 0, 14, 0);
+        layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        layout.constraintCount = 4;
+        layout.childAlignment = TextAnchor.UpperLeft;
+
+        ContentSizeFitter fitter = content.AddComponent<ContentSizeFitter>();
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        scrollRect.viewport = viewportRect;
+        scrollRect.content = contentRect;
+        return scrollRect;
+    }
+
+    private static void CreateLockedDexPlaceholders(Transform parent, int count)
+    {
+        Sprite questionSprite = LoadNewUiSprite("Recource/자산 12");
+
+        for (int i = 0; i < count; i++)
+        {
+            GameObject slot = CreateRectObject("LockedDogSlot_" + (i + 1).ToString("00"), new Vector2(92f, 138f), parent);
+
+            GameObject iconArea = CreateRectObject("IconArea", new Vector2(92f, 86f), slot.transform);
+            RectTransform iconAreaRect = iconArea.GetComponent<RectTransform>();
+            iconAreaRect.anchorMin = new Vector2(0.5f, 1f);
+            iconAreaRect.anchorMax = new Vector2(0.5f, 1f);
+            iconAreaRect.pivot = new Vector2(0.5f, 1f);
+            iconAreaRect.anchoredPosition = Vector2.zero;
+            Image iconAreaImage = iconArea.AddComponent<Image>();
+            iconAreaImage.color = new Color(0.61f, 0.62f, 0.48f, 1f);
+            iconAreaImage.raycastTarget = false;
+
+            GameObject labelArea = CreateRectObject("LabelArea", new Vector2(92f, 32f), slot.transform);
+            RectTransform labelAreaRect = labelArea.GetComponent<RectTransform>();
+            labelAreaRect.anchorMin = new Vector2(0.5f, 0f);
+            labelAreaRect.anchorMax = new Vector2(0.5f, 0f);
+            labelAreaRect.pivot = new Vector2(0.5f, 0f);
+            labelAreaRect.anchoredPosition = new Vector2(0f, 4f);
+            Image labelAreaImage = labelArea.AddComponent<Image>();
+            labelAreaImage.color = new Color(0.91f, 0.91f, 0.70f, 1f);
+            labelAreaImage.raycastTarget = false;
+
+            GameObject question = CreateRectObject("QuestionMark", new Vector2(44f, 44f), iconArea.transform);
+            RectTransform questionRect = question.GetComponent<RectTransform>();
+            questionRect.anchorMin = new Vector2(0.5f, 0.5f);
+            questionRect.anchorMax = new Vector2(0.5f, 0.5f);
+            questionRect.anchoredPosition = Vector2.zero;
+
+            Image questionImage = question.AddComponent<Image>();
+            questionImage.sprite = questionSprite;
+            questionImage.color = new Color(0.16f, 0.19f, 0.21f, 0.92f);
+            questionImage.preserveAspect = true;
+            questionImage.raycastTarget = false;
         }
     }
 
@@ -96,546 +277,188 @@ public static class InGameUIPrototypeSceneBuilder
         return manager;
     }
 
-    private static void EnsureGeneratedArtFolder()
+    private static void EnsureNewUiSprites()
     {
-        if (!AssetDatabase.IsValidFolder("Assets/Art"))
+        string[] guids = AssetDatabase.FindAssets("t:Texture2D", new[] { NewUiFolder });
+        for (int i = 0; i < guids.Length; i++)
         {
-            AssetDatabase.CreateFolder("Assets", "Art");
-        }
-
-        if (!AssetDatabase.IsValidFolder(GeneratedArtFolder))
-        {
-            AssetDatabase.CreateFolder("Assets/Art", "Generated");
-        }
-    }
-
-    private static void CreateMainScreen(Transform parent, InGameUIController controller, Sprite roomBackground)
-    {
-        GameObject root = CreateRectObject("InGameUIScreen", Vector2.zero, parent);
-        Stretch(root.GetComponent<RectTransform>());
-
-        Image background = root.AddComponent<Image>();
-        background.color = new Color(0.95f, 0.95f, 0.95f);
-
-        CreateRoomScene(root.transform, controller, roomBackground);
-    }
-
-    private static void CreateRoomScene(Transform parent, InGameUIController controller, Sprite roomBackground)
-    {
-        GameObject room = CreateRectObject("InGameRoom", new Vector2(1280f, 720f), parent);
-        RectTransform roomRect = room.GetComponent<RectTransform>();
-        roomRect.anchorMin = new Vector2(0.5f, 0.5f);
-        roomRect.anchorMax = new Vector2(0.5f, 0.5f);
-        roomRect.anchoredPosition = Vector2.zero;
-
-        Image roomImage = room.AddComponent<Image>();
-        roomImage.sprite = roomBackground;
-        roomImage.preserveAspect = false;
-        roomImage.color = Color.white;
-
-        CreateCurrencyInRoom(room.transform);
-        AddImageButton(room.transform, "EscButton", "XButton", new Vector2(44f, 44f), controller.ToggleSettings, new Vector2(555f, 250f), new Vector2(0.5f, 0.5f));
-        AddImageButton(room.transform, "BoneGenerateButton", "Create", new Vector2(98f, 56f), controller.GenerateBonePlaceholder, new Vector2(388f, -225f), new Vector2(0.5f, 0.5f));
-        AddImageButton(room.transform, "DogDexButton", "Dex", new Vector2(76f, 67f), controller.ToggleDogDex, new Vector2(480f, -225f), new Vector2(0.5f, 0.5f));
-        AddImageButton(room.transform, "ShopButton", "Continue", new Vector2(90f, 40f), controller.OpenShopPlaceholder, new Vector2(570f, -225f), new Vector2(0.5f, 0.5f));
-    }
-
-    private static void CreatePerspectiveFloorLines(Transform parent)
-    {
-        Color tileColor = new Color(0.48f, 0.48f, 0.44f, 0.85f);
-        Vector2 backCorner = new Vector2(0f, 48f);
-        Vector2 leftWallFloor = new Vector2(-440f, -24f);
-        Vector2 rightWallFloor = new Vector2(440f, -24f);
-
-        CreateUiLine(parent, "LeftWallFloorEdge", leftWallFloor, backCorner, Color.black, 2f);
-        CreateUiLine(parent, "RightWallFloorEdge", backCorner, rightWallFloor, Color.black, 2f);
-        CreateUiLine(parent, "FloorCenterDepth", backCorner, new Vector2(0f, -190f), tileColor, 1.2f);
-
-        CreateUiLine(parent, "FloorRow_01", new Vector2(-440f, -74f), new Vector2(440f, -74f), tileColor, 1f);
-        CreateUiLine(parent, "FloorRow_02", new Vector2(-440f, -124f), new Vector2(440f, -124f), tileColor, 1f);
-        CreateUiLine(parent, "FloorRow_03", new Vector2(-440f, -162f), new Vector2(440f, -162f), tileColor, 1f);
-
-        CreateUiLine(parent, "FloorLeftDepth_01", new Vector2(-330f, -42f), new Vector2(-240f, -190f), tileColor, 1f);
-        CreateUiLine(parent, "FloorLeftDepth_02", new Vector2(-205f, -20f), new Vector2(-92f, -190f), tileColor, 1f);
-        CreateUiLine(parent, "FloorLeftDepth_03", new Vector2(-86f, 12f), new Vector2(60f, -190f), tileColor, 1f);
-
-        CreateUiLine(parent, "FloorRightDepth_01", new Vector2(86f, 12f), new Vector2(-60f, -190f), tileColor, 1f);
-        CreateUiLine(parent, "FloorRightDepth_02", new Vector2(205f, -20f), new Vector2(92f, -190f), tileColor, 1f);
-        CreateUiLine(parent, "FloorRightDepth_03", new Vector2(330f, -42f), new Vector2(240f, -190f), tileColor, 1f);
-    }
-
-    private static Sprite CreateRoomBackgroundSprite()
-    {
-        const int width = 1280;
-        const int height = 720;
-        Texture2D texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
-
-        Color clear = new Color(0f, 0f, 0f, 0f);
-        Color leftWall = new Color(0.82f, 0.88f, 0.72f, 1f);
-        Color rightWall = new Color(0.96f, 0.94f, 0.55f, 1f);
-        Color floor = new Color(0.99f, 0.99f, 0.97f, 1f);
-
-        FillTexture(texture, clear);
-
-        DrawPolygon(texture, leftWall,
-            ToPixel(new Vector2(-640f, 360f), width, height),
-            ToPixel(new Vector2(0f, 360f), width, height),
-            ToPixel(new Vector2(0f, 86f), width, height),
-            ToPixel(new Vector2(-640f, -48f), width, height));
-
-        DrawPolygon(texture, rightWall,
-            ToPixel(new Vector2(0f, 360f), width, height),
-            ToPixel(new Vector2(640f, 360f), width, height),
-            ToPixel(new Vector2(640f, -48f), width, height),
-            ToPixel(new Vector2(0f, 86f), width, height));
-
-        DrawPolygon(texture, floor,
-            ToPixel(new Vector2(-640f, -48f), width, height),
-            ToPixel(new Vector2(0f, 86f), width, height),
-            ToPixel(new Vector2(640f, -48f), width, height),
-            ToPixel(new Vector2(640f, -360f), width, height),
-            ToPixel(new Vector2(-640f, -360f), width, height));
-
-        texture.Apply();
-        System.IO.File.WriteAllBytes(RoomBackgroundPath, texture.EncodeToPNG());
-        Object.DestroyImmediate(texture);
-
-        AssetDatabase.ImportAsset(RoomBackgroundPath, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
-        TextureImporter importer = (TextureImporter)AssetImporter.GetAtPath(RoomBackgroundPath);
-        importer.textureType = TextureImporterType.Sprite;
-        importer.spriteImportMode = SpriteImportMode.Single;
-        importer.alphaIsTransparency = true;
-        importer.mipmapEnabled = false;
-        importer.textureCompression = TextureImporterCompression.Uncompressed;
-        importer.SaveAndReimport();
-
-        return AssetDatabase.LoadAssetAtPath<Sprite>(RoomBackgroundPath);
-    }
-
-    private static Vector2Int ToPixel(Vector2 point, int width, int height)
-    {
-        return new Vector2Int(
-            Mathf.RoundToInt(point.x + width * 0.5f),
-            Mathf.RoundToInt(point.y + height * 0.5f));
-    }
-
-    private static void FillTexture(Texture2D texture, Color color)
-    {
-        for (int y = 0; y < texture.height; y++)
-        {
-            for (int x = 0; x < texture.width; x++)
+            string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+            if (!path.EndsWith(".png"))
             {
-                texture.SetPixel(x, y, color);
+                continue;
             }
-        }
-    }
 
-    private static void DrawPolygon(Texture2D texture, Color color, params Vector2Int[] points)
-    {
-        if (points == null || points.Length < 3)
-        {
-            return;
-        }
-
-        int minX = texture.width - 1;
-        int maxX = 0;
-        int minY = texture.height - 1;
-        int maxY = 0;
-
-        for (int i = 0; i < points.Length; i++)
-        {
-            minX = Mathf.Min(minX, points[i].x);
-            maxX = Mathf.Max(maxX, points[i].x);
-            minY = Mathf.Min(minY, points[i].y);
-            maxY = Mathf.Max(maxY, points[i].y);
-        }
-
-        minX = Mathf.Clamp(minX, 0, texture.width - 1);
-        maxX = Mathf.Clamp(maxX, 0, texture.width - 1);
-        minY = Mathf.Clamp(minY, 0, texture.height - 1);
-        maxY = Mathf.Clamp(maxY, 0, texture.height - 1);
-
-        for (int y = minY; y <= maxY; y++)
-        {
-            for (int x = minX; x <= maxX; x++)
+            TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer == null)
             {
-                if (IsPointInPolygon(new Vector2(x + 0.5f, y + 0.5f), points))
-                {
-                    texture.SetPixel(x, y, color);
-                }
+                continue;
             }
+
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.alphaIsTransparency = true;
+            importer.mipmapEnabled = false;
+            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.maxTextureSize = 8192;
+            importer.SaveAndReimport();
         }
     }
 
-    private static bool IsPointInPolygon(Vector2 point, Vector2Int[] polygon)
+    private static Image CreateFullScreenImage(string name, Transform parent, Sprite sprite)
     {
-        bool inside = false;
-        for (int i = 0, j = polygon.Length - 1; i < polygon.Length; j = i++)
-        {
-            Vector2 a = polygon[i];
-            Vector2 b = polygon[j];
-            bool intersects = ((a.y > point.y) != (b.y > point.y)) &&
-                              (point.x < (b.x - a.x) * (point.y - a.y) / (b.y - a.y) + a.x);
-            if (intersects)
-            {
-                inside = !inside;
-            }
-        }
+        GameObject imageObject = CreateRectObject(name, Vector2.zero, parent);
+        RectTransform rect = imageObject.GetComponent<RectTransform>();
+        Stretch(rect);
 
-        return inside;
-    }
-
-    private static void CreateCurrencyInRoom(Transform parent)
-    {
-        GameObject badge = CreateRectObject("CurrencyBadge", new Vector2(172f, 38f), parent);
-        RectTransform badgeRect = badge.GetComponent<RectTransform>();
-        badgeRect.anchoredPosition = new Vector2(430f, 250f);
-        Image badgeImage = badge.AddComponent<Image>();
-        badgeImage.color = Color.white;
-        badge.AddComponent<Outline>().effectColor = new Color(0.26f, 0.24f, 0.20f);
-
-        Image icon = CreateRectObject("CurrencyIcon", new Vector2(124f, 26f), badge.transform).AddComponent<Image>();
-        RectTransform iconRect = icon.GetComponent<RectTransform>();
-        iconRect.anchorMin = new Vector2(0f, 0.5f);
-        iconRect.anchorMax = new Vector2(0f, 0.5f);
-        iconRect.anchoredPosition = new Vector2(70f, 0f);
-        icon.sprite = LoadSprite("Currency");
-        icon.preserveAspect = true;
-
-        Text amount = CreateText("Amount", badge.transform, "0", 20, TextAnchor.MiddleLeft);
-        RectTransform amountRect = amount.GetComponent<RectTransform>();
-        amountRect.anchorMin = new Vector2(0f, 0f);
-        amountRect.anchorMax = new Vector2(1f, 1f);
-        amountRect.offsetMin = new Vector2(134f, 0f);
-        amountRect.offsetMax = new Vector2(-8f, 0f);
-        amount.color = new Color(0.12f, 0.12f, 0.10f);
-    }
-
-    private static DogDexView CreateDogDexPanel(Transform parent, InGameUIController controller, DogDexManager manager, DogDexSlotView slotPrefab, DogDexDatabase database)
-    {
-        GameObject panel = CreateRectObject("DogDexPanel", new Vector2(620f, 590f), parent);
-        RectTransform panelRect = panel.GetComponent<RectTransform>();
-        panelRect.anchorMin = new Vector2(0.5f, 0.5f);
-        panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-        panelRect.anchoredPosition = new Vector2(-80f, 0f);
-        Image panelImage = panel.AddComponent<Image>();
-        panelImage.color = new Color(0.72f, 0.86f, 0.95f, 0.98f);
-        panel.AddComponent<Outline>().effectColor = new Color(0.12f, 0.18f, 0.22f);
-
-        Text title = CreateText("Title", panel.transform, "Dog Dex", 30, TextAnchor.MiddleCenter);
-        RectTransform titleRect = title.GetComponent<RectTransform>();
-        titleRect.anchorMin = new Vector2(0.5f, 1f);
-        titleRect.anchorMax = new Vector2(0.5f, 1f);
-        titleRect.anchoredPosition = new Vector2(0f, -36f);
-        titleRect.sizeDelta = new Vector2(260f, 44f);
-        title.color = new Color(0.08f, 0.12f, 0.16f);
-
-        AddImageButton(panel.transform, "CloseButton", "XButton", new Vector2(48f, 48f), controller.HideDogDex, new Vector2(274f, -34f), new Vector2(0.5f, 1f));
-
-        ScrollRect scrollRect = CreateScrollView(panel.transform);
-        Transform content = scrollRect.content;
-        DogDexView viewObject = new GameObject("DogDexView").AddComponent<DogDexView>();
-        viewObject.transform.SetParent(panel.transform, false);
-
-        SerializedObject serializedView = new SerializedObject(viewObject);
-        serializedView.FindProperty("dexManager").objectReferenceValue = manager;
-        serializedView.FindProperty("slotPrefab").objectReferenceValue = slotPrefab;
-        serializedView.FindProperty("slotParent").objectReferenceValue = content;
-        serializedView.FindProperty("showAllEntries").boolValue = false;
-        serializedView.ApplyModifiedPropertiesWithoutUndo();
-
-        if (database != null && slotPrefab != null)
-        {
-            for (int i = 0; i < database.Entries.Count; i++)
-            {
-                GameObject slotObject = (GameObject)PrefabUtility.InstantiatePrefab(slotPrefab.gameObject, content);
-                DogDexSlotView slot = slotObject.GetComponent<DogDexSlotView>();
-                slot.name = "DogDexSlot_" + (i + 1).ToString("00");
-                slot.SetEntry(database.Entries[i], false);
-            }
-        }
-
-        return viewObject;
-    }
-
-    private static ScrollRect CreateScrollView(Transform parent)
-    {
-        GameObject scrollObject = CreateRectObject("DogDexScrollView", new Vector2(540f, 462f), parent);
-        RectTransform scrollRectTransform = scrollObject.GetComponent<RectTransform>();
-        scrollRectTransform.anchorMin = new Vector2(0.5f, 0.5f);
-        scrollRectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-        scrollRectTransform.anchoredPosition = new Vector2(0f, -44f);
-        Image scrollImage = scrollObject.AddComponent<Image>();
-        scrollImage.color = new Color(1f, 1f, 1f, 0.42f);
-
-        ScrollRect scrollRect = scrollObject.AddComponent<ScrollRect>();
-        scrollRect.horizontal = false;
-        scrollRect.vertical = true;
-        scrollRect.scrollSensitivity = 28f;
-        scrollRect.movementType = ScrollRect.MovementType.Elastic;
-
-        GameObject viewport = CreateRectObject("Viewport", Vector2.zero, scrollObject.transform);
-        RectTransform viewportRect = viewport.GetComponent<RectTransform>();
-        Stretch(viewportRect);
-        Image viewportImage = viewport.AddComponent<Image>();
-        viewportImage.color = new Color(1f, 1f, 1f, 0.03f);
-        viewport.AddComponent<Mask>().showMaskGraphic = false;
-
-        GameObject content = CreateRectObject("Content", new Vector2(500f, 0f), viewport.transform);
-        RectTransform contentRect = content.GetComponent<RectTransform>();
-        contentRect.anchorMin = new Vector2(0.5f, 1f);
-        contentRect.anchorMax = new Vector2(0.5f, 1f);
-        contentRect.pivot = new Vector2(0.5f, 1f);
-        contentRect.anchoredPosition = new Vector2(0f, -14f);
-
-        GridLayoutGroup layout = content.AddComponent<GridLayoutGroup>();
-        layout.cellSize = new Vector2(145f, 158f);
-        layout.spacing = new Vector2(16f, 16f);
-        layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-        layout.constraintCount = 3;
-        layout.childAlignment = TextAnchor.UpperCenter;
-
-        ContentSizeFitter fitter = content.AddComponent<ContentSizeFitter>();
-        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-        scrollRect.viewport = viewportRect;
-        scrollRect.content = contentRect;
-        scrollRect.verticalScrollbar = CreateVerticalScrollbar(scrollObject.transform);
-        scrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHideAndExpandViewport;
-        scrollRect.verticalScrollbarSpacing = 6f;
-        return scrollRect;
-    }
-
-    private static Scrollbar CreateVerticalScrollbar(Transform parent)
-    {
-        GameObject scrollbarObject = CreateRectObject("VerticalScrollbar", new Vector2(18f, 462f), parent);
-        RectTransform scrollbarRect = scrollbarObject.GetComponent<RectTransform>();
-        scrollbarRect.anchorMin = new Vector2(1f, 0f);
-        scrollbarRect.anchorMax = new Vector2(1f, 1f);
-        scrollbarRect.pivot = new Vector2(1f, 0.5f);
-        scrollbarRect.offsetMin = new Vector2(-18f, 0f);
-        scrollbarRect.offsetMax = Vector2.zero;
-
-        Image background = scrollbarObject.AddComponent<Image>();
-        background.color = new Color(0.78f, 0.86f, 0.90f, 0.85f);
-
-        GameObject handleArea = CreateRectObject("SlidingArea", Vector2.zero, scrollbarObject.transform);
-        RectTransform handleAreaRect = handleArea.GetComponent<RectTransform>();
-        Stretch(handleAreaRect);
-        handleAreaRect.offsetMin = new Vector2(3f, 3f);
-        handleAreaRect.offsetMax = new Vector2(-3f, -3f);
-
-        GameObject handle = CreateRectObject("Handle", Vector2.zero, handleArea.transform);
-        RectTransform handleRect = handle.GetComponent<RectTransform>();
-        Stretch(handleRect);
-        Image handleImage = handle.AddComponent<Image>();
-        handleImage.color = new Color(0.26f, 0.42f, 0.52f, 0.95f);
-
-        Scrollbar scrollbar = scrollbarObject.AddComponent<Scrollbar>();
-        scrollbar.targetGraphic = handleImage;
-        scrollbar.handleRect = handleRect;
-        scrollbar.direction = Scrollbar.Direction.BottomToTop;
-        return scrollbar;
-    }
-
-    private static GameObject CreateSettingsPanel(Transform parent, InGameUIController controller)
-    {
-        GameObject panel = CreateRectObject("SettingsPanel", new Vector2(430f, 310f), parent);
-        RectTransform panelRect = panel.GetComponent<RectTransform>();
-        panelRect.anchorMin = new Vector2(0.5f, 0.5f);
-        panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-        panelRect.anchoredPosition = new Vector2(-80f, 20f);
-        Image image = panel.AddComponent<Image>();
-        image.color = new Color(0.96f, 0.96f, 0.92f, 0.98f);
-        panel.AddComponent<Outline>().effectColor = new Color(0.18f, 0.18f, 0.16f);
-
-        Text title = CreateText("Title", panel.transform, "Settings", 30, TextAnchor.MiddleCenter);
-        RectTransform titleRect = title.GetComponent<RectTransform>();
-        titleRect.anchorMin = new Vector2(0.5f, 1f);
-        titleRect.anchorMax = new Vector2(0.5f, 1f);
-        titleRect.anchoredPosition = new Vector2(0f, -46f);
-        titleRect.sizeDelta = new Vector2(220f, 48f);
-        title.color = new Color(0.12f, 0.12f, 0.10f);
-
-        CreateTextLine(panel.transform, "BGM", new Vector2(0f, 34f));
-        CreateTextLine(panel.transform, "SFX", new Vector2(0f, -34f));
-        AddImageButton(panel.transform, "CloseButton", "XButton", new Vector2(48f, 48f), controller.HideSettings, new Vector2(184f, -34f), new Vector2(0.5f, 1f));
-        return panel;
-    }
-
-    private static void CreateTextLine(Transform parent, string label, Vector2 position)
-    {
-        Text text = CreateText(label, parent, label + "  -  On", 24, TextAnchor.MiddleCenter);
-        RectTransform rect = text.GetComponent<RectTransform>();
-        rect.anchoredPosition = position;
-        rect.sizeDelta = new Vector2(260f, 42f);
-        text.color = new Color(0.14f, 0.14f, 0.12f);
-    }
-
-    private static Button AddImageButton(Transform parent, string name, string spriteName, Vector2 size, UnityAction action)
-    {
-        return AddImageButton(parent, name, spriteName, size, action, Vector2.zero, new Vector2(0.5f, 0.5f));
-    }
-
-    private static Button AddImageButton(Transform parent, string name, string spriteName, Vector2 size, UnityAction action, Vector2 anchoredPosition, Vector2 anchor)
-    {
-        GameObject buttonObject = CreateRectObject(name, size, parent);
-        RectTransform rect = buttonObject.GetComponent<RectTransform>();
-        rect.anchorMin = anchor;
-        rect.anchorMax = anchor;
-        rect.anchoredPosition = anchoredPosition;
-
-        Image image = buttonObject.AddComponent<Image>();
-        image.sprite = LoadSprite(spriteName);
-        image.preserveAspect = true;
-        image.color = image.sprite == null ? new Color(0.86f, 0.86f, 0.80f) : Color.white;
-
-        Button button = buttonObject.AddComponent<Button>();
-        UnityEventTools.AddPersistentListener(button.onClick, action);
-        return button;
-    }
-
-    private static Button CreatePlainButton(Transform parent, string name, string label, Vector2 size, UnityAction action)
-    {
-        return CreatePlainButton(parent, name, label, size, action, Vector2.zero, new Vector2(0.5f, 0.5f));
-    }
-
-    private static Button CreatePlainButton(Transform parent, string name, string label, Vector2 size, UnityAction action, Vector2 anchoredPosition, Vector2 anchor)
-    {
-        GameObject buttonObject = CreateRectObject(name, size, parent);
-        RectTransform rect = buttonObject.GetComponent<RectTransform>();
-        rect.anchorMin = anchor;
-        rect.anchorMax = anchor;
-        rect.anchoredPosition = anchoredPosition;
-
-        Image image = buttonObject.AddComponent<Image>();
-        image.color = new Color(0.98f, 0.93f, 0.78f, 0.96f);
-        Outline outline = buttonObject.AddComponent<Outline>();
-        outline.effectColor = new Color(0.22f, 0.18f, 0.12f);
-        outline.effectDistance = new Vector2(2f, -2f);
-
-        Button button = buttonObject.AddComponent<Button>();
-        UnityEventTools.AddPersistentListener(button.onClick, action);
-
-        Text text = CreateText("Text", buttonObject.transform, label, 24, TextAnchor.MiddleCenter);
-        RectTransform textRect = text.GetComponent<RectTransform>();
-        Stretch(textRect);
-        text.color = new Color(0.12f, 0.10f, 0.08f);
-        text.fontStyle = FontStyle.Bold;
-        return button;
-    }
-
-    private static Image CreateUiLine(Transform parent, string name, Vector2 start, Vector2 end, Color color, float thickness)
-    {
-        Vector2 delta = end - start;
-        GameObject lineObject = CreateRectObject(name, new Vector2(delta.magnitude, thickness), parent);
-        RectTransform rect = lineObject.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.5f, 0.5f);
-        rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.anchoredPosition = (start + end) * 0.5f;
-        rect.localEulerAngles = new Vector3(0f, 0f, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
-
-        Image image = lineObject.AddComponent<Image>();
-        image.color = color;
+        Image image = imageObject.AddComponent<Image>();
+        image.sprite = sprite;
+        image.color = sprite == null ? new Color(0.95f, 0.94f, 0.88f) : Color.white;
+        image.preserveAspect = false;
+        image.raycastTarget = false;
         return image;
     }
 
-    private static Button AddLabeledImageButton(Transform parent, string name, string spriteName, string label, Vector2 size, UnityAction action)
+    private static Image CreateSpriteImage(string name, Transform parent, Sprite sprite, Vector2 size, Vector2 anchoredPosition)
     {
-        return AddLabeledImageButton(parent, name, spriteName, label, size, action, Vector2.zero, new Vector2(0.5f, 0.5f));
+        GameObject imageObject = CreateRectObject(name, size, parent);
+        RectTransform rect = imageObject.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = anchoredPosition;
+
+        Image image = imageObject.AddComponent<Image>();
+        image.sprite = sprite;
+        image.color = sprite == null ? new Color(1f, 1f, 1f, 0.001f) : Color.white;
+        image.preserveAspect = true;
+        image.raycastTarget = false;
+        return image;
     }
 
-    private static Button AddLabeledImageButton(Transform parent, string name, string spriteName, string label, Vector2 size, UnityAction action, Vector2 anchoredPosition, Vector2 anchor)
+    private static Text CreateSettingsLabel(Transform parent, string name, string value, Vector2 anchoredPosition)
     {
-        Button button = AddImageButton(parent, name, spriteName, size, action, anchoredPosition, anchor);
-        Text text = CreateText("Label", button.transform, label, 20, TextAnchor.MiddleCenter);
-        RectTransform textRect = text.GetComponent<RectTransform>();
-        Stretch(textRect);
-        text.color = new Color(0.11f, 0.10f, 0.08f);
-        text.fontStyle = FontStyle.Bold;
+        Text label = CreateText(name, parent, value, 27, TextAnchor.MiddleCenter);
+        RectTransform rect = label.GetComponent<RectTransform>();
+        rect.sizeDelta = new Vector2(132f, 42f);
+        rect.anchoredPosition = anchoredPosition;
+        label.color = new Color(0.26f, 0.23f, 0.16f);
+        label.fontStyle = FontStyle.Bold;
+        return label;
+    }
+
+    private static Slider CreateVolumeSlider(Transform parent, string name, Vector2 anchoredPosition)
+    {
+        GameObject sliderObject = CreateRectObject(name, new Vector2(322f, 50f), parent);
+        RectTransform sliderRect = sliderObject.GetComponent<RectTransform>();
+        sliderRect.anchorMin = new Vector2(0.5f, 0.5f);
+        sliderRect.anchorMax = new Vector2(0.5f, 0.5f);
+        sliderRect.anchoredPosition = anchoredPosition;
+
+        Image inputArea = sliderObject.AddComponent<Image>();
+        inputArea.color = new Color(1f, 1f, 1f, 0.001f);
+        inputArea.raycastTarget = true;
+
+        Slider slider = sliderObject.AddComponent<Slider>();
+        slider.minValue = 0f;
+        slider.maxValue = 1f;
+        slider.value = 0.5f;
+
+        GameObject background = CreateRectObject("Background", Vector2.zero, sliderObject.transform);
+        RectTransform backgroundRect = background.GetComponent<RectTransform>();
+        Stretch(backgroundRect);
+        Image backgroundImage = background.AddComponent<Image>();
+        backgroundImage.sprite = LoadNewUiSprite("Recource/자산 10");
+        backgroundImage.color = Color.white;
+        backgroundImage.preserveAspect = false;
+        backgroundImage.raycastTarget = false;
+
+        GameObject handleArea = CreateRectObject("Handle Slide Area", Vector2.zero, sliderObject.transform);
+        RectTransform handleAreaRect = handleArea.GetComponent<RectTransform>();
+        Stretch(handleAreaRect);
+        handleAreaRect.offsetMin = new Vector2(26f, 0f);
+        handleAreaRect.offsetMax = new Vector2(-26f, 0f);
+
+        GameObject handle = CreateRectObject("Handle", new Vector2(34f, 52f), handleArea.transform);
+        Image handleImage = handle.AddComponent<Image>();
+        handleImage.sprite = LoadNewUiSprite("Recource/자산 9");
+        handleImage.color = Color.white;
+        handleImage.preserveAspect = true;
+        handleImage.raycastTarget = true;
+
+        slider.targetGraphic = handleImage;
+        slider.handleRect = handle.GetComponent<RectTransform>();
+        return slider;
+    }
+
+    private static Button AddSpriteButton(Transform parent, string name, Sprite sprite, Vector2 size, UnityAction action, Vector2 anchoredPosition)
+    {
+        GameObject buttonObject = CreateRectObject(name, size, parent);
+        RectTransform rect = buttonObject.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = anchoredPosition;
+
+        Image image = buttonObject.AddComponent<Image>();
+        image.sprite = sprite;
+        image.color = sprite == null ? new Color(1f, 1f, 1f, 0.001f) : Color.white;
+        image.preserveAspect = true;
+        image.raycastTarget = true;
+
+        Button button = buttonObject.AddComponent<Button>();
+        button.targetGraphic = image;
+        UnityEventTools.AddPersistentListener(button.onClick, action);
         return button;
     }
 
-    private static Sprite LoadSprite(string name)
+    private static Button AddTransparentButton(Transform parent, string name, Vector2 size, UnityAction action, Vector2 anchoredPosition)
     {
-        string guid = GetUiSpriteGuid(name);
-        if (!string.IsNullOrEmpty(guid))
+        GameObject buttonObject = CreateRectObject(name, size, parent);
+        RectTransform rect = buttonObject.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = anchoredPosition;
+
+        Image image = buttonObject.AddComponent<Image>();
+        image.color = new Color(1f, 1f, 1f, 0.001f);
+        image.raycastTarget = true;
+
+        Button button = buttonObject.AddComponent<Button>();
+        button.targetGraphic = image;
+        UnityEventTools.AddPersistentListener(button.onClick, action);
+        return button;
+    }
+
+    private static Sprite LoadNewUiSprite(string name)
+    {
+        string path = NewUiFolder + "/" + name;
+        if (!path.EndsWith(".png"))
         {
-            string guidPath = AssetDatabase.GUIDToAssetPath(guid);
-            Sprite guidSprite = AssetDatabase.LoadAssetAtPath<Sprite>(guidPath);
-            if (guidSprite != null)
-            {
-                return guidSprite;
-            }
+            path += ".png";
         }
 
-        Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(UiImageFolder + "/" + name + ".png");
+        Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
         if (sprite != null)
         {
             return sprite;
         }
 
-        string[] guids = AssetDatabase.FindAssets(name + " t:Sprite", new[] { UiImageFolder });
-        if (guids.Length == 0)
-        {
-            guids = AssetDatabase.FindAssets(name, new[] { UiImageFolder });
-        }
-
+        string[] guids = AssetDatabase.FindAssets(name + " t:Sprite", new[] { NewUiFolder });
         for (int i = 0; i < guids.Length; i++)
         {
-            string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-            sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            string guidPath = AssetDatabase.GUIDToAssetPath(guids[i]);
+            sprite = AssetDatabase.LoadAssetAtPath<Sprite>(guidPath);
             if (sprite != null)
             {
                 return sprite;
             }
         }
 
-        Debug.LogWarning("Sprite not found: " + name);
+        Debug.LogWarning("New UI sprite not found: " + name);
         return null;
     }
 
-    private static string GetUiSpriteGuid(string name)
+    private static Canvas CreateCanvas(string name)
     {
-        switch (name)
-        {
-            case "Start":
-            case "시작":
-                return "d03fe3da216e5ab4085447d4394acae6";
-            case "Continue":
-            case "계속하기":
-                return "97789076acd861241b3ef75946a23570";
-            case "Settings":
-            case "설정 (세팅(esc))":
-                return "e85580a65501dca46b8365853bc5acac";
-            case "Exit":
-            case "나가기":
-                return "bb08aa6cc2ae28d45bfce4b30262b928";
-            case "Dex":
-            case "도감":
-                return "c617a0f3628fba6439671d23fecbbc01";
-            case "Create":
-            case "생성":
-                return "7f3744dd4dfc8a4408ad9b1b2df4fde3";
-            case "Currency":
-            case "재화":
-                return "4707fdb48b82a7746916cf21150c504d";
-            case "XButton":
-            case "X버튼":
-                return "396f23740dde84146a1cb999a4351513";
-            default:
-                return string.Empty;
-        }
-    }
-
-    private static Sprite LoadPrototypeSprite(string name)
-    {
-        return AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Prototype/" + name + ".png");
-    }
-
-    private static Canvas CreateCanvas()
-    {
-        GameObject canvasObject = new GameObject("InGameUICanvas");
+        GameObject canvasObject = new GameObject(name);
         Canvas canvas = canvasObject.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
 

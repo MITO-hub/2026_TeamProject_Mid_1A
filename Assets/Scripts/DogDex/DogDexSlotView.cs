@@ -9,6 +9,7 @@ public class DogDexSlotView : MonoBehaviour
     [SerializeField] private Text nameText;
     [SerializeField] private GameObject lockedMark;
     [SerializeField] private Sprite lockedIcon;
+    [SerializeField] private bool alwaysShowLockedView;
 
     public void SetEntry(DogDexEntry entry, bool isUnlocked)
     {
@@ -21,27 +22,34 @@ public class DogDexSlotView : MonoBehaviour
         this.entry = entry;
         gameObject.SetActive(true);
 
+        bool shouldShowUnlocked = isUnlocked && !alwaysShowLockedView;
+
         if (frameImage != null)
         {
-            frameImage.color = isUnlocked ? new Color(0.92f, 0.92f, 0.88f) : new Color(0.62f, 0.62f, 0.60f);
+            frameImage.color = shouldShowUnlocked ? new Color(0.92f, 0.92f, 0.88f) : new Color(0.62f, 0.62f, 0.60f);
         }
 
         if (iconImage != null)
         {
-            iconImage.sprite = isUnlocked ? entry.Icon : lockedIcon;
-            iconImage.color = isUnlocked ? Color.white : new Color(0.35f, 0.35f, 0.35f, 0.45f);
+            iconImage.sprite = shouldShowUnlocked ? entry.Icon : lockedIcon;
+            iconImage.color = shouldShowUnlocked ? Color.white : new Color(0.35f, 0.35f, 0.35f, 0.45f);
             iconImage.enabled = iconImage.sprite != null;
         }
 
         if (nameText != null)
         {
-            nameText.text = entry.Id.ToString();
+            nameText.text = alwaysShowLockedView ? string.Empty : entry.Id.ToString();
         }
 
         if (lockedMark != null)
         {
-            lockedMark.SetActive(!isUnlocked);
+            lockedMark.SetActive(!shouldShowUnlocked);
         }
+    }
+
+    public void SetAlwaysShowLockedView(bool value)
+    {
+        alwaysShowLockedView = value;
     }
 
     public void Refresh(DogDexManager dexManager)

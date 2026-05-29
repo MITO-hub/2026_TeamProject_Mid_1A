@@ -7,6 +7,7 @@ public class DogDexView : MonoBehaviour
     [SerializeField] private DogDexSlotView slotPrefab;
     [SerializeField] private Transform slotParent;
     [SerializeField] private bool showAllEntries;
+    [SerializeField] private bool forceLockedSlotDisplay;
 
     private readonly List<DogDexSlotView> slots = new List<DogDexSlotView>();
 
@@ -63,6 +64,7 @@ public class DogDexView : MonoBehaviour
 
             DogDexEntry entry = entries[i];
             bool isUnlocked = showAllEntries || dexManager.IsUnlocked(entry.Id);
+            slots[i].SetAlwaysShowLockedView(forceLockedSlotDisplay);
             slots[i].SetEntry(entry, isUnlocked);
         }
     }
@@ -72,6 +74,7 @@ public class DogDexView : MonoBehaviour
         while (slots.Count < count)
         {
             DogDexSlotView slot = Instantiate(slotPrefab, slotParent);
+            slot.SetAlwaysShowLockedView(forceLockedSlotDisplay);
             slots.Add(slot);
         }
     }
@@ -88,6 +91,7 @@ public class DogDexView : MonoBehaviour
             DogDexSlotView slot = slotParent.GetChild(i).GetComponent<DogDexSlotView>();
             if (slot != null)
             {
+                slot.SetAlwaysShowLockedView(forceLockedSlotDisplay);
                 slots.Add(slot);
             }
         }
